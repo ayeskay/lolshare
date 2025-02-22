@@ -1,0 +1,61 @@
+<html>
+<body>
+  <h1>Upload a file</h1>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" id="fileInput" name="file" required />
+    <button type="submit">Upload</button>
+  </form>
+
+  <script>
+    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const file = document.getElementById('fileInput').files[0];
+      if (!file) {
+        alert("Please choose a file.");
+        return;
+      }
+
+      // Call the function to upload the file
+      await uploadFile(file);
+    });
+
+    async function uploadFile(file) {
+      const token = 'your-personal-access-token'; // GitHub Personal Access Token (keep this secure)
+      const repo = 'your-username/your-repository';
+      const path = `uploads/${file.name}`;  // Path in the repository where the file will be stored
+      const reader = new FileReader();
+
+      reader.onload = async function() {
+        const content = reader.result.split(',')[1];  // Extract the base64-encoded content
+        
+        try {
+          const response = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `token ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              message: `Upload file ${file.name}`,
+              content: content, // The base64-encoded file content
+            }),
+          });
+
+          if (response.ok) {
+            alert('File uploaded successfully!');
+          } else {
+            const error = await response.json();
+            alert('Error uploading file: ' + error.message);
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          alert('Something went wrong!');
+        }
+      };
+
+      reader.readAsDataURL(file);  // Read the file as a base64 string
+    }
+  </script>
+</body>
+</html>
