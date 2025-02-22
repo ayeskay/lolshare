@@ -1,29 +1,20 @@
-// api/upload.js
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
-  const file = req.body.file;
+  const file = req.body; // Get the binary file directly
   if (!file) {
     return res.status(400).json({ message: 'No file provided' });
   }
 
-  // Replace these with your private repository details
-  const repoOwner = 'ayeskay'; // Your GitHub username
-  const repoName = 'lolshare-data'; // Your private repository name
-  const branch = 'main'; // Branch in the private repository
+  const repoOwner = 'ayeskay'; // Replace with your GitHub username
+  const repoName = 'lolshare-data'; //Replace with your private repository name
+  const branch = 'main'; // Replace with your branch name
+  const token = process.env.GITHUB_PAT; // Access the PAT from environment variables
 
-  // Access the PAT from Vercel environment variables
-  const token = process.env.GITHUB_PAT;
+  const filename = req.headers['file-name']; // Get the filename from headers
 
-  // Get the filename from the request headers
-  const filename = req.headers['file-name'];
-
-  // Convert the file to base64
-  const content = Buffer.from(file, 'base64');
-
-  // GitHub API URL for uploading files
   const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filename}`;
 
   try {
@@ -35,7 +26,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         message: `Upload ${filename}`,
-        content: content.toString('base64'),
+        content: Buffer.from(file).toString('base64'), // Convert binary to base64
         branch: branch,
       }),
     });
@@ -44,9 +35,9 @@ export default async function handler(req, res) {
     if (response.ok) {
       res.status(200).json({ download_url: data.content.download_url });
     } else {
-      res.status(response.status).json({ message: data.message });
+      res.status(response.status).json({ message: data.message || 'GitHub API error' });
     }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message || 'Internal server error' });
   }
 }
